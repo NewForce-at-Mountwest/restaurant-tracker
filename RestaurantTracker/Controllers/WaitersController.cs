@@ -33,6 +33,7 @@ namespace RestaurantTracker.Controllers
          // When we CREATE users, we should attach the user Id of the logged in user
 
 
+            // Get the currently logged in user
         private Task<ApplicationUser> GetCurrentUserAsync() => _userManager.GetUserAsync(HttpContext.User);
 
         // GET: Waiters
@@ -40,8 +41,8 @@ namespace RestaurantTracker.Controllers
         {
 
             // Get the current user
-            var user = await GetCurrentUserAsync();
-            return View(await _context.Waiter.Where(waiter => waiter.UserId == user.Id).ToListAsync());
+            ApplicationUser loggedInUser = await GetCurrentUserAsync();
+            return View(await _context.Waiter.Where(waiter => waiter.UserId == loggedInUser.Id).ToListAsync());
         }
 
         // GET: Waiters/Details/5

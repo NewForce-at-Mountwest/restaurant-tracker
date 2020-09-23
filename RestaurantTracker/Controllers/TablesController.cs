@@ -22,7 +22,7 @@ namespace RestaurantTracker.Controllers
         // GET: Tables
         public async Task<IActionResult> Index()
         {
-            var applicationDbContext = _context.Table.Include(t => t.Waiter);
+            var applicationDbContext = _context.Table.Include(t => t.Restaurant).Include(t => t.Waiter).Include(t => t.Restaurant);
             return View(await applicationDbContext.ToListAsync());
         }
 
@@ -48,7 +48,7 @@ namespace RestaurantTracker.Controllers
         // GET: Tables/Create
         public IActionResult Create()
         {
-            ViewData["WaiterId"] = new SelectList(_context.Waiter, "Id", "Id");
+            ViewData["RestaurantId"] = new SelectList(_context.Restaurant, "Id", "Name");
             return View();
         }
 
@@ -57,7 +57,7 @@ namespace RestaurantTracker.Controllers
         // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,WaiterId")] Table table)
+        public async Task<IActionResult> Create([Bind("Id,Name,RestaurantId, WaiterId")] Table table)
         {
             if (ModelState.IsValid)
             {

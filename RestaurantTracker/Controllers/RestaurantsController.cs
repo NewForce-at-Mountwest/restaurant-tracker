@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -11,41 +12,29 @@ using RestaurantTracker.Models;
 
 namespace RestaurantTracker.Controllers
 {
-    public class WaitersController : Controller
+    public class RestaurantsController : Controller
     {
         private readonly ApplicationDbContext _context;
 
-        // Add private field to hold our user manager
         private readonly UserManager<ApplicationUser> _userManager;
 
-        // Inject the user manager into our controller
-        public WaitersController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        private Task<ApplicationUser> GetCurrentUserAsync() => _userManager.GetUserAsync(HttpContext.User);
+        public RestaurantsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _userManager = userManager;
+
         }
 
-        // Before we can use our ApplicationUser, we also need to:
-        // Find reference to IdentityUser in Startup.cs and change it to ApplicationUser
-        // Find reference to IdentityUser in Views/Shared/_LoginPartial.cshtml and change to ApplicationUser
-
-         // When we GET waiters, we should make sure they belong to the logged in user
-         // When we CREATE users, we should attach the user Id of the logged in user
-
-
-            // Get the currently logged in user
-        private Task<ApplicationUser> GetCurrentUserAsync() => _userManager.GetUserAsync(HttpContext.User);
-
-        // GET: Waiters
+        // GET: Restaurants
         public async Task<IActionResult> Index()
         {
-
-            // Get the current user
-            ApplicationUser loggedInUser = await GetCurrentUserAsync();
-            return View(await _context.Waiter.Where(waiter => waiter.UserId == loggedInUser.Id).Include(w => w.Restaurant).OrderBy(w => w.Restaurant.Name).ToListAsync());
+            var user = await GetCurrentUserAsync();
+            var applicationDbContext = _context.Restaurant.Where(r => r.UserId == user.Id);
+            return View(await applicationDbContext.ToListAsync());
         }
 
-        // GET: Waiters/Details/5
+        // GET: Restaurants/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -53,44 +42,46 @@ namespace RestaurantTracker.Controllers
                 return NotFound();
             }
 
-            // Add an .Include()
-            var waiter = await _context.Waiter
+            var restaurant = await _context.Restaurant
+                .Include(r => r.User)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (waiter == null)
+            if (restaurant == null)
             {
                 return NotFound();
             }
 
-            return View(waiter);
+            return View(restaurant);
         }
 
-        // GET: Waiters/Create
+        // GET: Restaurants/Create
+        [Authorize]
         public IActionResult Create()
         {
-            ViewData["RestaurantId"] = new SelectList(_context.Restaurant, "Id", "Name");
+
+
             return View();
         }
 
-        // POST: Waiters/Create
+        // POST: Restaurants/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to, for 
         // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,FirstName,LastName, RestaurantId")] Waiter waiter)
+        public async Task<IActionResult> Create([Bind("Id,Name")] Restaurant restaurant)
         {
             if (ModelState.IsValid)
             {
-                // get the current user 
                 var user = await GetCurrentUserAsync();
-                waiter.UserId = user.Id;
-                _context.Add(waiter);
+                restaurant.UserId = user.Id;
+                _context.Add(restaurant);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            return View(waiter);
+            ViewData["UserId"] = new SelectList(_context.User, "Id", "Id", restaurant.UserId);
+            return View(restaurant);
         }
 
-        // GET: Waiters/Edit/5
+        // GET: Restaurants/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -98,22 +89,23 @@ namespace RestaurantTracker.Controllers
                 return NotFound();
             }
 
-            var waiter = await _context.Waiter.FindAsync(id);
-            if (waiter == null)
+            var restaurant = await _context.Restaurant.FindAsync(id);
+            if (restaurant == null)
             {
                 return NotFound();
             }
-            return View(waiter);
+            ViewData["UserId"] = new SelectList(_context.User, "Id", "Id", restaurant.UserId);
+            return View(restaurant);
         }
 
-        // POST: Waiters/Edit/5
+        // POST: Restaurants/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to, for 
         // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,FirstName,LastName")] Waiter waiter)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,UserId")] Restaurant restaurant)
         {
-            if (id != waiter.Id)
+            if (id != restaurant.Id)
             {
                 return NotFound();
             }
@@ -122,15 +114,12 @@ namespace RestaurantTracker.Controllers
             {
                 try
                 {
-                    // get the current user 
-                    var user = await GetCurrentUserAsync();
-                    waiter.UserId = user.Id;
-                    _context.Update(waiter);
+                    _context.Update(restaurant);
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!WaiterExists(waiter.Id))
+                    if (!RestaurantExists(restaurant.Id))
                     {
                         return NotFound();
                     }
@@ -141,10 +130,11 @@ namespace RestaurantTracker.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return View(waiter);
+            ViewData["UserId"] = new SelectList(_context.User, "Id", "Id", restaurant.UserId);
+            return View(restaurant);
         }
 
-        // GET: Waiters/Delete/5
+        // GET: Restaurants/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -152,30 +142,42 @@ namespace RestaurantTracker.Controllers
                 return NotFound();
             }
 
-            var waiter = await _context.Waiter
+            var restaurant = await _context.Restaurant
+                .Include(r => r.User)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (waiter == null)
+            if (restaurant == null)
             {
                 return NotFound();
             }
 
-            return View(waiter);
+            return View(restaurant);
         }
 
-        // POST: Waiters/Delete/5
+        // POST: Restaurants/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var waiter = await _context.Waiter.FindAsync(id);
-            _context.Waiter.Remove(waiter);
+            var restaurant = await _context.Restaurant.FindAsync(id);
+            _context.Restaurant.Remove(restaurant);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        private bool WaiterExists(int id)
+        private bool RestaurantExists(int id)
         {
-            return _context.Waiter.Any(e => e.Id == id);
+            return _context.Restaurant.Any(e => e.Id == id);
+        }
+
+        // Custom method to get all the waiters at a given restaurant
+        public async Task<IActionResult> Waiters(int id)
+        {
+            List<Waiter> waitersAtThisRestaurant = await _context.Waiter
+                .Where(w => w.RestaurantId == id)
+                .ToListAsync();
+
+            return Ok(waitersAtThisRestaurant);
+
         }
     }
 }

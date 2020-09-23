@@ -6,23 +6,19 @@ using System.Threading.Tasks;
 
 namespace RestaurantTracker.Models
 {
-    public class Table
+    public class Restaurant
     {
         public int Id { get; set; }
 
+        [Display(Name="Restaurant Name")]
         public string Name { get; set; }
 
-        public int WaiterId { get; set; }
+        public List<Waiter> Waiters { get; set; } = new List<Waiter>();
 
-        public Waiter Waiter { get; set; }
+        public List<Table> Tables { get; set; } = new List<Table>();
 
         public ApplicationUser User { get; set; }
 
         public string UserId { get; set; }
-
-        public Restaurant Restaurant { get; set; }
-
-        [Display(Name="Restaurant")]
-        public int RestaurantId { get; set; }
     }
 }

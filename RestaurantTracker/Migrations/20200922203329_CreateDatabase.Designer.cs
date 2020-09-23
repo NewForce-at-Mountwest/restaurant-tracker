@@ -7,11 +7,11 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RestaurantTracker.Data;
 
-namespace RestaurantTracker.Data.Migrations
+namespace RestaurantTracker.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20200910191221_AddedApplicationUser")]
-    partial class AddedApplicationUser
+    [Migration("20200922203329_CreateDatabase")]
+    partial class CreateDatabase
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -227,6 +227,26 @@ namespace RestaurantTracker.Data.Migrations
                     b.ToTable("AspNetUserTokens");
                 });
 
+            modelBuilder.Entity("RestaurantTracker.Models.Restaurant", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Restaurant");
+                });
+
             modelBuilder.Entity("RestaurantTracker.Models.Table", b =>
                 {
                     b.Property<int>("Id")
@@ -237,10 +257,20 @@ namespace RestaurantTracker.Data.Migrations
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("RestaurantId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<int>("WaiterId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("RestaurantId");
+
+                    b.HasIndex("UserId");
 
                     b.HasIndex("WaiterId");
 
@@ -260,10 +290,15 @@ namespace RestaurantTracker.Data.Migrations
                     b.Property<string>("LastName")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("RestaurantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("UserId")
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("RestaurantId");
 
                     b.HasIndex("UserId");
 
@@ -273,6 +308,9 @@ namespace RestaurantTracker.Data.Migrations
             modelBuilder.Entity("RestaurantTracker.Models.ApplicationUser", b =>
                 {
                     b.HasBaseType("Microsoft.AspNetCore.Identity.IdentityUser");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasDiscriminator().HasValue("ApplicationUser");
                 });
@@ -328,8 +366,25 @@ namespace RestaurantTracker.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("RestaurantTracker.Models.Restaurant", b =>
+                {
+                    b.HasOne("RestaurantTracker.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+                });
+
             modelBuilder.Entity("RestaurantTracker.Models.Table", b =>
                 {
+                    b.HasOne("RestaurantTracker.Models.Restaurant", "Restaurant")
+                        .WithMany("Tables")
+                        .HasForeignKey("RestaurantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RestaurantTracker.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
                     b.HasOne("RestaurantTracker.Models.Waiter", "Waiter")
                         .WithMany("Tables")
                         .HasForeignKey("WaiterId")
@@ -339,6 +394,12 @@ namespace RestaurantTracker.Data.Migrations
 
             modelBuilder.Entity("RestaurantTracker.Models.Waiter", b =>
                 {
+                    b.HasOne("RestaurantTracker.Models.Restaurant", "Restaurant")
+                        .WithMany("Waiters")
+                        .HasForeignKey("RestaurantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("RestaurantTracker.Models.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("UserId");

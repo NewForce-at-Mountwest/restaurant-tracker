@@ -1,4 +1,4 @@
-﻿@model RestaurantTracker.Models.Table
+﻿@model RestaurantTracker.Models.Restaurant
 
 @{
     ViewData["Title"] = "Create";
@@ -6,7 +6,7 @@
 
 <h1>Create</h1>
 
-<h4>Table</h4>
+<h4>Restaurant</h4>
 <hr />
 <div class="row">
     <div class="col-md-4">
@@ -17,14 +17,7 @@
                 <input asp-for="Name" class="form-control" />
                 <span asp-validation-for="Name" class="text-danger"></span>
             </div>
-            <div class="form-group">
-                <label asp-for="RestaurantId" class="control-label"></label>
-                @*Give our select element a good old html id*@
-                <select id="restaurant-dropdown" asp-for="RestaurantId" class="form-control" asp-items="ViewBag.RestaurantId"></select>
-            </div>
-            <div class="form-group" id="waiter-dropdown">
-
-            </div>
+           
             <div class="form-group">
                 <input type="submit" value="Create" class="btn btn-primary" />
             </div>
